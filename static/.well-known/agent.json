@@ -1,0 +1,252 @@
+{
+  "agent": {
+    "id": "weather-agent-001",
+    "name": "Weather Agent",
+    "description": "Agente especializado en información meteorológica usando Open-Meteo API",
+    "version": "1.0.0",
+    "status": "active",
+    "endpoint": "http://localhost:8001",
+    "metadata": {
+      "created_at": "2025-06-13T22:50:59.813624",
+      "provider": "Open-Meteo",
+      "supported_languages": [
+        "es",
+        "en"
+      ],
+      "coverage": "global",
+      "update_frequency": "real-time"
+    }
+  },
+  "capabilities": [
+    {
+      "name": "get_current_weather",
+      "description": "Obtiene el clima actual para una ubicación específica",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "location": {
+            "type": "string",
+            "description": "Nombre de la ubicación (ciudad, país)"
+          }
+        },
+        "required": [
+          "location"
+        ]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "location": {
+            "type": "object"
+          },
+          "current_weather": {
+            "type": "object"
+          },
+          "status": {
+            "type": "string"
+          },
+          "generated_at": {
+            "type": "string"
+          }
+        }
+      },
+      "examples": [
+        {
+          "input": {
+            "location": "Buenos Aires"
+          },
+          "output": {
+            "location": {
+              "name": "Buenos Aires",
+              "country": "Argentina"
+            },
+            "current_weather": {
+              "temperature": 22.5,
+              "condition": "Soleado",
+              "humidity": 65
+            },
+            "status": "success"
+          }
+        }
+      ]
+    },
+    {
+      "name": "get_forecast",
+      "description": "Obtiene el pronóstico meteorológico para una ubicación",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "location": {
+            "type": "string",
+            "description": "Nombre de la ubicación"
+          },
+          "days": {
+            "type": "integer",
+            "description": "Número de días (1-16)",
+            "minimum": 1,
+            "maximum": 16,
+            "default": 7
+          }
+        },
+        "required": [
+          "location"
+        ]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "location": {
+            "type": "object"
+          },
+          "forecast": {
+            "type": "object"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "examples": [
+        {
+          "input": {
+            "location": "Madrid",
+            "days": 3
+          },
+          "output": {
+            "location": {
+              "name": "Madrid",
+              "country": "España"
+            },
+            "forecast": {
+              "daily_data": []
+            },
+            "status": "success"
+          }
+        }
+      ]
+    },
+    {
+      "name": "search_locations",
+      "description": "Busca ubicaciones por nombre",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Término de búsqueda"
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Límite de resultados",
+            "default": 5,
+            "minimum": 1,
+            "maximum": 20
+          }
+        },
+        "required": [
+          "query"
+        ]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "locations": {
+            "type": "array"
+          },
+          "count": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "examples": [
+        {
+          "input": {
+            "query": "Paris",
+            "limit": 3
+          },
+          "output": {
+            "locations": [
+              {
+                "name": "Paris",
+                "country": "France"
+              },
+              {
+                "name": "Paris",
+                "country": "United States"
+              }
+            ],
+            "count": 2,
+            "status": "success"
+          }
+        }
+      ]
+    }
+  ],
+  "communication": {
+    "protocol": "JSON-RPC 2.0",
+    "transport": "HTTP",
+    "endpoints": {
+      "rpc": "http://localhost:8001/rpc",
+      "health": "http://localhost:8001/health",
+      "status": "http://localhost:8001/status",
+      "tasks": "http://localhost:8001/tasks"
+    },
+    "supported_methods": [
+      "get_current_weather",
+      "get_forecast",
+      "search_locations",
+      "get_agent_info",
+      "get_capabilities",
+      "submit_task",
+      "get_task_status",
+      "cancel_task"
+    ]
+  },
+  "discovery": {
+    "well_known_path": "/.well-known/agent.json",
+    "last_updated": "2025-06-13T22:50:59.813715",
+    "ttl": 3600
+  },
+  "authentication": {
+    "required": false,
+    "methods": [
+      "none"
+    ],
+    "note": "Autenticación opcional para uso futuro"
+  },
+  "rate_limiting": {
+    "requests_per_minute": 60,
+    "burst_limit": 10
+  },
+  "examples": {
+    "get_current_weather": {
+      "request": {
+        "jsonrpc": "2.0",
+        "method": "get_current_weather",
+        "params": {
+          "location": "Buenos Aires"
+        },
+        "id": "1"
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "result": {
+          "location": {
+            "name": "Buenos Aires",
+            "country": "Argentina"
+          },
+          "current_weather": {
+            "temperature": 22.5,
+            "condition": "Soleado",
+            "humidity": 65
+          },
+          "status": "success"
+        },
+        "id": "1"
+      }
+    }
+  }
+}

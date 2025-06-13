@@ -1,0 +1,110 @@
+{
+  "basic_weather_query": {
+    "title": "Consulta B\u00e1sica de Clima",
+    "description": "Ejemplo de consulta simple de clima actual",
+    "steps": [
+      {
+        "step": 1,
+        "description": "Descubrir agente",
+        "request": {
+          "method": "GET",
+          "url": "/.well-known/agent.json"
+        }
+      },
+      {
+        "step": 2,
+        "description": "Obtener clima actual",
+        "request": {
+          "method": "POST",
+          "url": "/rpc",
+          "body": {
+            "jsonrpc": "2.0",
+            "method": "get_current_weather",
+            "params": {
+              "location": "Madrid"
+            },
+            "id": "weather-001"
+          }
+        }
+      }
+    ]
+  },
+  "multi_city_comparison": {
+    "title": "Comparaci\u00f3n Multi-Ciudad",
+    "description": "Comparar clima de m\u00faltiples ciudades",
+    "steps": [
+      {
+        "step": 1,
+        "description": "Consultas paralelas",
+        "requests": [
+          {
+            "method": "POST",
+            "url": "/rpc",
+            "body": {
+              "jsonrpc": "2.0",
+              "method": "get_current_weather",
+              "params": {
+                "location": "Madrid"
+              },
+              "id": "madrid-001"
+            }
+          },
+          {
+            "method": "POST",
+            "url": "/rpc",
+            "body": {
+              "jsonrpc": "2.0",
+              "method": "get_current_weather",
+              "params": {
+                "location": "Barcelona"
+              },
+              "id": "barcelona-001"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "async_task_workflow": {
+    "title": "Flujo de Tareas As\u00edncronas",
+    "description": "Gesti\u00f3n de tareas de larga duraci\u00f3n",
+    "steps": [
+      {
+        "step": 1,
+        "description": "Enviar tarea",
+        "request": {
+          "method": "POST",
+          "url": "/rpc",
+          "body": {
+            "jsonrpc": "2.0",
+            "method": "submit_task",
+            "params": {
+              "capability": "get_forecast",
+              "input_data": {
+                "location": "Tokyo",
+                "days": 7
+              }
+            },
+            "id": "task-001"
+          }
+        }
+      },
+      {
+        "step": 2,
+        "description": "Monitorear progreso",
+        "request": {
+          "method": "POST",
+          "url": "/rpc",
+          "body": {
+            "jsonrpc": "2.0",
+            "method": "get_task_status",
+            "params": {
+              "task_id": "task-uuid-here"
+            },
+            "id": "status-001"
+          }
+        }
+      }
+    ]
+  }
+}

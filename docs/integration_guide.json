@@ -1,0 +1,43 @@
+{
+  "title": "Gu\u00eda de Integraci\u00f3n A2A",
+  "sections": [
+    {
+      "title": "Configuraci\u00f3n Inicial",
+      "content": [
+        "1. Configurar endpoint del agente meteorol\u00f3gico",
+        "2. Implementar cliente JSON-RPC 2.0",
+        "3. Configurar manejo de errores y timeouts",
+        "4. Implementar cache para ubicaciones frecuentes"
+      ]
+    },
+    {
+      "title": "Flujo de Descubrimiento",
+      "content": [
+        "1. GET /.well-known/agent.json para obtener capacidades",
+        "2. Validar versi\u00f3n del protocolo A2A",
+        "3. Verificar capacidades requeridas",
+        "4. Configurar endpoints de comunicaci\u00f3n"
+      ]
+    },
+    {
+      "title": "Mejores Pr\u00e1cticas",
+      "content": [
+        "- Implementar retry con backoff exponencial",
+        "- Usar connection pooling para mejor rendimiento",
+        "- Cachear respuestas de ubicaciones por 1 hora",
+        "- Implementar circuit breaker para resiliencia",
+        "- Monitorear m\u00e9tricas de latencia y errores"
+      ]
+    },
+    {
+      "title": "Manejo de Errores",
+      "content": [
+        "- C\u00f3digo -32700: Error de parsing JSON",
+        "- C\u00f3digo -32600: Solicitud inv\u00e1lida",
+        "- C\u00f3digo -32601: M\u00e9todo no encontrado",
+        "- C\u00f3digo -32602: Par\u00e1metros inv\u00e1lidos",
+        "- C\u00f3digo -32603: Error interno del servidor"
+      ]
+    }
+  ]
+}

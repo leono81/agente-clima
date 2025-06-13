@@ -1,0 +1,200 @@
+# =============================================================================
+# CLIMA WEATHER AGENT - .gitignore
+# =============================================================================
+
+# Python
+# -----------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
+# -----------------------------------------------------------------------------
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+.env/
+pyvenv.cfg
+
+# Environment Variables
+# -----------------------------------------------------------------------------
+.env
+.env.local
+.env.development
+.env.staging
+.env.production
+.env.test
+*.env
+
+# IDE & Editors
+# -----------------------------------------------------------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Jupyter Notebooks
+# -----------------------------------------------------------------------------
+.ipynb_checkpoints
+*.ipynb
+
+# Testing
+# -----------------------------------------------------------------------------
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+
+# Logs & Debugging
+# -----------------------------------------------------------------------------
+*.log
+logs/
+*.log.*
+server*.log
+debug*.log
+error*.log
+access*.log
+app*.log
+test*.log
+integration*.log
+
+# Cache & Temporary Files
+# -----------------------------------------------------------------------------
+.cache/
+*.tmp
+*.temp
+temp/
+tmp/
+.tmp/
+*.pid
+*.seed
+*.pid.lock
+
+# Database
+# -----------------------------------------------------------------------------
+*.db
+*.sqlite
+*.sqlite3
+db.sqlite3
+database.db
+
+# Docker
+# -----------------------------------------------------------------------------
+.dockerignore
+docker-compose.override.yml
+.docker/
+
+# Monitoring & Metrics
+# -----------------------------------------------------------------------------
+prometheus_data/
+grafana_data/
+*.rrd
+metrics/
+
+# AI & ML Models
+# -----------------------------------------------------------------------------
+models/
+*.pkl
+*.joblib
+*.h5
+*.pb
+checkpoints/
+
+# Documentation Build
+# -----------------------------------------------------------------------------
+docs/_build/
+docs/build/
+site/
+.mkdocs/
+
+# Package Managers
+# -----------------------------------------------------------------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# OS Generated
+# -----------------------------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Backup Files
+# -----------------------------------------------------------------------------
+*.bak
+*.backup
+*.old
+*~
+.#*
+#*#
+
+# Production & Deployment
+# -----------------------------------------------------------------------------
+.terraform/
+*.tfstate
+*.tfstate.backup
+.terraform.lock.hcl
+
+# Project Specific
+# -----------------------------------------------------------------------------
+# Reports temporales
+*_report.json
+*_readiness_report.json
+
+# Archivos de configuración local
+config/local.py
+config/development.py
+
+# Datos de prueba
+test_data/
+sample_data/
+
+# Certificados y claves
+*.pem
+*.key
+*.crt
+*.p12
+secrets/
+credentials/
+
+# Archivos de migración temporal
+migrations/temp/
+*.migration.tmp 

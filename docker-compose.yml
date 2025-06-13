@@ -1,0 +1,173 @@
+# Weather Agent A2A - Production Stack
+# ====================================
+
+version: '3.8'
+
+services:
+  # Weather Agent A2A Service
+  weather-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: weather-agent-a2a
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      - WEATHER_AGENT_HOST=0.0.0.0
+      - WEATHER_AGENT_PORT=8001
+      - WEATHER_AGENT_WORKERS=4
+      - WEATHER_AGENT_LOG_LEVEL=INFO
+      - WEATHER_AGENT_LOG_FORMAT=json
+      - WEATHER_AGENT_CACHE_SIZE=10000
+      - WEATHER_AGENT_RATE_LIMIT=100
+      - WEATHER_AGENT_REDIS_URL=redis://redis:6379
+      - WEATHER_AGENT_POSTGRES_URL=postgresql://weatheruser:weatherpass@postgres:5432/weatherdb
+      - WEATHER_AGENT_METRICS_ENABLED=true
+      - WEATHER_AGENT_ALERTS_ENABLED=true
+    volumes:
+      - ./logs:/app/logs
+      - ./data:/app/data
+    depends_on:
+      - redis
+      - postgres
+    networks:
+      - weather-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Redis for caching and session storage
+  redis:
+    image: redis:7-alpine
+    container_name: weather-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    networks:
+      - weather-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # PostgreSQL for metrics and persistent data
+  postgres:
+    image: postgres:15-alpine
+    container_name: weather-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=weatherdb
+      - POSTGRES_USER=weatheruser
+      - POSTGRES_PASSWORD=weatherpass
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - weather-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U weatheruser -d weatherdb"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Prometheus for metrics collection
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: weather-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - weather-network
+    depends_on:
+      - weather-agent
+
+  # Grafana for metrics visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: weather-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=weatheragent123
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    networks:
+      - weather-network
+    depends_on:
+      - prometheus
+
+  # Nginx reverse proxy and load balancer
+  nginx:
+    image: nginx:alpine
+    container_name: weather-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/ssl:/etc/nginx/ssl
+      - ./logs/nginx:/var/log/nginx
+    depends_on:
+      - weather-agent
+    networks:
+      - weather-network
+
+  # Log aggregation with Fluentd
+  fluentd:
+    image: fluent/fluentd:v1.16-debian-1
+    container_name: weather-fluentd
+    restart: unless-stopped
+    volumes:
+      - ./logging/fluentd.conf:/fluentd/etc/fluent.conf
+      - ./logs:/var/log/weather-agent
+    ports:
+      - "24224:24224"
+      - "24224:24224/udp"
+    networks:
+      - weather-network
+
+volumes:
+  redis-data:
+    driver: local
+  postgres-data:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+
+networks:
+  weather-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16 
