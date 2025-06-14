@@ -24,6 +24,10 @@ Sistema completo de verificación climática con comunicación Agent-to-Agent (A
 - [Arquitectura](#-arquitectura)
 - [API Reference](#-api-reference)
 - [Deployment](#-deployment)
+  - [Ubuntu VM con Systemd](#-ubuntu-vm-con-systemd-recomendado-para-vms)
+  - [Docker](#-docker-para-desarrollotesting)
+  - [Producción Enterprise](#-producción-enterprise)
+- [Configuración de Red](#-configuración-de-red-y-troubleshooting)
 - [Desarrollo](#-desarrollo)
 - [Testing](#-testing)
 - [Monitoreo](#-monitoreo)
@@ -189,61 +193,130 @@ curl -X POST http://localhost:8001/rpc \
 
 ## 🐳 Deployment
 
-### Desarrollo
+### Desarrollo Local
 
 ```bash
 # Servidor simple
-python test_a2a_server.py
+python main.py server --host 0.0.0.0 --port 8000
 
 # Con hot reload
-uvicorn src.a2a.server:app --reload --host 0.0.0.0 --port 8001
+uvicorn src.interfaces.server:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### Staging
+### 🖥️ Ubuntu VM con Systemd (Recomendado para VMs)
+
+**Ideal para**: Proxmox VMs, VPS, servidores con recursos limitados
+
+#### Instalación Automática
+
+```bash
+# 1. Subir proyecto a la VM
+scp -r clima/ usuario@ip-vm:/tmp/
+
+# 2. SSH y ejecutar setup
+ssh usuario@ip-vm
+cd /tmp/clima
+chmod +x deployment/simple-setup.sh
+./deployment/simple-setup.sh
+
+# 3. Configurar API keys
+sudo nano /opt/clima/.env
+sudo systemctl restart clima-agent
+
+# 4. Verificar funcionamiento
+curl http://localhost:8000/health
+```
+
+#### Gestión del Servicio
+
+```bash
+# Script de gestión (recomendado)
+./deployment/manage-service.sh status    # Ver estado
+./deployment/manage-service.sh logs      # Ver logs en tiempo real
+./deployment/manage-service.sh restart   # Reiniciar servicio
+./deployment/manage-service.sh health    # Verificar salud
+./deployment/manage-service.sh config    # Editar configuración
+
+# Comandos systemd directos
+sudo systemctl status clima-agent        # Estado
+sudo systemctl restart clima-agent       # Reiniciar
+sudo journalctl -u clima-agent -f        # Logs
+```
+
+#### Ventajas del Deployment con Systemd
+
+- ✅ **Bajo uso de memoria** (sin overhead de Docker)
+- ✅ **Inicio automático** al reiniciar el servidor
+- ✅ **Reinicio automático** si el proceso falla
+- ✅ **Logs integrados** con journald del sistema
+- ✅ **Gestión nativa** del sistema operativo
+- ✅ **Control granular** de recursos y permisos
+
+### 🐳 Docker (Para Desarrollo/Testing)
 
 ```bash
 # Docker Compose básico
 docker-compose up -d weather-agent redis
 
 # Verificar
-curl http://localhost:8001/health
+curl http://localhost:8000/health
 ```
 
-### Producción
+### 🏭 Producción Enterprise
 
 ```bash
 # Stack completo con monitoreo
 docker-compose up -d
 
 # Servicios incluidos:
-# - weather-agent: Agente principal
+# - weather-agent: Agente principal (puerto 8000)
 # - redis: Cache y sesiones
 # - postgres: Métricas persistentes
 # - prometheus: Recolección de métricas
-# - grafana: Visualización
-# - nginx: Reverse proxy
+# - grafana: Visualización (puerto 3000)
+# - nginx: Reverse proxy (puerto 80)
 # - fluentd: Agregación de logs
 ```
 
 ### Variables de Entorno
 
+#### Configuración Básica (.env)
+
 ```bash
-# Servidor
+# APIs Requeridas
+OPENAI_API_KEY=your-openai-key-here
+
+# Servidor (opcional)
 WEATHER_AGENT_HOST=0.0.0.0
-WEATHER_AGENT_PORT=8001
-WEATHER_AGENT_WORKERS=4
+WEATHER_AGENT_PORT=8000
+WEATHER_AGENT_WORKERS=1
 
-# APIs
-OPENAI_API_KEY=your-openai-key
+# APIs Externas
 WEATHER_API_TIMEOUT=30
+WEATHER_API_BASE_URL=https://api.open-meteo.com
 
-# Cache y Performance
-WEATHER_AGENT_CACHE_SIZE=10000
-WEATHER_AGENT_RATE_LIMIT=100
+# Cache y Performance (para VMs pequeñas)
+WEATHER_AGENT_CACHE_SIZE=1000
+WEATHER_AGENT_RATE_LIMIT=50
+MAX_CONNECTIONS=10
 
 # Monitoreo
 WEATHER_AGENT_LOG_LEVEL=INFO
 WEATHER_AGENT_METRICS_ENABLED=true
+
+# MCP Configuration
+MCP_SERVER_URL=http://localhost:3001
+MCP_TIMEOUT=30
+```
+
+#### Optimización para VMs Pequeñas
+
+```bash
+# En /opt/clima/.env para systemd deployment
+WORKERS=1                    # Un solo worker
+MAX_CONNECTIONS=10           # Límite de conexiones
+CACHE_SIZE=100              # Cache pequeño
+WEATHER_AGENT_RATE_LIMIT=30 # Rate limit conservador
 ```
 
 ## 👨‍💻 Desarrollo
@@ -257,39 +330,75 @@ clima/
 │   │   ├── server.py        # Servidor FastAPI
 │   │   ├── client.py        # Cliente A2A
 │   │   ├── models.py        # Modelos de datos
-│   │   └── agent_card.py    # Agent Card
+│   │   ├── agent_card.py    # Agent Card
+│   │   └── docs.py          # Generación de documentación
 │   ├── core/                # Lógica de negocio
 │   │   ├── agent.py         # Agente principal
 │   │   ├── weather_mcp.py   # Servicio meteorológico
-│   │   └── optimizations.py # Optimizaciones
-│   └── config/              # Configuración
+│   │   └── optimizations.py # Cache, rate limiting, circuit breakers
+│   ├── config/              # Configuración
+│   │   ├── settings.py      # Configuración general
+│   │   └── production.py    # Configuración de producción
+│   └── interfaces/          # Interfaces de usuario
+│       ├── server.py        # Servidor web principal
+│       └── cli.py           # Interfaz de línea de comandos
+├── deployment/              # Scripts de deployment
+│   ├── simple-setup.sh      # Instalación automática Ubuntu/systemd
+│   ├── manage-service.sh    # Gestión del servicio
+│   └── DEPLOYMENT-GUIDE.md  # Guía completa de deployment
 ├── tests/                   # Pruebas
-├── docs/                    # Documentación
-├── docker-compose.yml       # Stack de producción
-└── Dockerfile              # Imagen del agente
+│   ├── test_a2a_integration.py  # Tests de integración A2A
+│   └── test_production_ready.py # Validación de producción
+├── docs/                    # Documentación generada
+├── main.py                  # Punto de entrada principal
+├── docker-compose.yml       # Stack de producción completo
+├── Dockerfile              # Imagen del agente
+├── requirements.txt         # Dependencias Python
+└── env.example             # Template de variables de entorno
 ```
 
 ### Comandos de Desarrollo
 
 ```bash
-# Instalar dependencias de desarrollo
-pip install -r requirements-dev.txt
+# Instalar dependencias
+pip install -r requirements.txt
+
+# Ejecutar servidor de desarrollo
+python main.py server --host 0.0.0.0 --port 8000
 
 # Ejecutar tests
 python -m pytest tests/
 
-# Linting
-flake8 src/
-black src/
-
-# Generar documentación
-python generate_docs.py
-
-# Testing de integración
+# Testing de integración A2A
 python tests/test_a2a_integration.py
 
 # Validación de producción
 python test_production_ready.py
+
+# Generar documentación
+python generate_docs.py
+
+# Linting (si tienes las dependencias)
+black src/
+isort src/
+mypy src/
+```
+
+### Comandos de Deployment
+
+```bash
+# Setup automático en Ubuntu VM
+./deployment/simple-setup.sh
+
+# Gestión del servicio (después de instalar)
+./deployment/manage-service.sh status
+./deployment/manage-service.sh logs
+./deployment/manage-service.sh restart
+./deployment/manage-service.sh health
+
+# Docker (alternativo)
+docker-compose up -d
+docker-compose logs -f weather-agent
 ```
 
 ## 🧪 Testing
@@ -318,19 +427,92 @@ python test_production_ready.py
 - **Monitoreo**: ✅ Health checks, métricas
 - **Integración**: ✅ 100% workflows exitosos
 
+## 🔧 Configuración de Red y Troubleshooting
+
+### Acceso desde la Red Local
+
+```bash
+# Obtener IP de la VM
+hostname -I
+# Ejemplo: 192.168.1.100
+
+# Probar desde otros dispositivos en la red
+curl http://192.168.1.100:8000/health
+
+# Verificar puerto abierto
+sudo netstat -tlnp | grep 8000
+sudo ss -tlnp | grep 8000
+```
+
+### Configuración de Firewall
+
+```bash
+# Ver estado del firewall
+sudo ufw status
+
+# Permitir acceso desde red local específica
+sudo ufw allow from 192.168.1.0/24 to any port 8000
+
+# Permitir acceso global (cuidado en producción)
+sudo ufw allow 8000/tcp
+```
+
+### Troubleshooting Común
+
+#### El servicio no inicia
+```bash
+# Ver error específico
+sudo systemctl status clima-agent -l
+
+# Ver logs detallados
+sudo journalctl -u clima-agent -n 50
+
+# Verificar permisos
+ls -la /opt/clima/
+sudo -u clima /opt/clima/venv/bin/python --version
+```
+
+#### Puerto ocupado
+```bash
+# Ver qué proceso usa el puerto
+sudo lsof -i :8000
+
+# Cambiar puerto del servicio
+sudo systemctl edit clima-agent
+# Agregar:
+# [Service]
+# ExecStart=
+# ExecStart=/opt/clima/venv/bin/python main.py server --host 0.0.0.0 --port 8001
+```
+
+#### Problemas de API Keys
+```bash
+# Verificar configuración
+sudo cat /opt/clima/.env | grep OPENAI_API_KEY
+
+# Editar configuración
+sudo nano /opt/clima/.env
+
+# Reiniciar después de cambios
+sudo systemctl restart clima-agent
+```
+
 ## 📊 Monitoreo
 
 ### Health Checks
 
 ```bash
 # Health básico
-curl http://localhost:8001/health
+curl http://localhost:8000/health
 
 # Status detallado
-curl http://localhost:8001/status
+curl http://localhost:8000/status
 
 # Métricas de tareas
-curl http://localhost:8001/tasks
+curl http://localhost:8000/tasks
+
+# Desde la red (cambiar IP)
+curl http://192.168.1.100:8000/health
 ```
 
 ### Dashboards
